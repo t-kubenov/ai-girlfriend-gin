@@ -3,16 +3,14 @@ package main
 import (
 	"ai-girlfriend-gin/bot"
 	"ai-girlfriend-gin/models"
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 	"time"
-	// "context"
 )
 
-// func inputRoutine(ctx context.Context){
-// 	select {
-// 		case 
-// 	}
-// }
+// next: implement other bots
 
 func generateMessage(text string) models.Message {
 	message := models.Message{
@@ -25,21 +23,31 @@ func generateMessage(text string) models.Message {
 }
 
 func incomingChan(ch chan <- models.Message, bot bot.Responder){
-	var text string
-	var message models.Message
-	_, err := fmt.Scanln(&text)
+	reader := bufio.NewReader(os.Stdin)
 
-	if (err != nil){
-		fmt.Println("Error occured: " + err.Error())
-		return
+	for {
+		var message models.Message
+		text, err := reader.ReadString('\n')
+		if (err != nil){
+			fmt.Println("Error occured: " + err.Error())
+			return
+		}
+		text = strings.TrimSpace(text)
+
+		if (text == "quit") {
+			close(ch)
+			return
+		}
+
+		message = generateMessage(text)
+		ch <- bot.Respond(message)
 	}
-
-	message = generateMessage(text)
-	ch <- bot.Respond(message)
 }
 
 func outgoingChan(ch <- chan models.Message){
-	fmt.Println(<-ch)
+	for msg := range ch {
+		fmt.Println(msg.From + ": " + msg.Text)
+	}
 }
 
 func main() {
